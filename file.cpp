@@ -9,10 +9,10 @@ class Level {
 public:
 	static const int Size_Strings = 10;
 	static const int Size_Columns = 20;
-	char *name;
+	int number;
 	char map [Size_Strings][Size_Columns];
 	Level() {
-		this->name = "Level";
+		this->number = 1;
 		this->setLevel(1);
 	}
 	~Level() {
@@ -37,7 +37,7 @@ public:
 				}
 			}
 			//free(this->name);
-			this->name = "Level 1";
+			this->number = 1;
 			printf("Level was created");
 			return true;
 			break;
@@ -86,13 +86,13 @@ struct Game {
 	long points;
 	int speed;
 	char stopSymbol;
-	char *saveStatus;
+	int saveStatus;
 	Game() {
 		stopSymbol = 113; //q
 		lifes = 3;
 		points = 0;
 		speed = 10;
-		saveStatus = "NEW";
+		saveStatus = 0; //0 - new, 1 - load
 	}
 };
 
@@ -121,19 +121,39 @@ bool createConfig()
 
 }
 
+void printGame() {
+	printf("%i \n", CurrentGame.speed);
+	printf("%i \n", CurrentGame.lifes);
+	printf("%i \n", CurrentGame.points);
+	printf("%i %i \n", CurrentBall.position.X, CurrentBall.position.Y);
+	printf("%i %i \n", CurrentBall.course.X, CurrentBall.course.Y);
+	printf("%i %i \n", CurrentPlatform.position.X, CurrentPlatform.position.Y);
+	printf("%i \n", CurrentLevel.number);
+	printf("%i \n", CurrentGame.saveStatus);
+	for (int i = 0; i < CurrentLevel.Size_Strings; i++) 
+	{
+		for (int j = 0; j < CurrentLevel.Size_Columns; j++) 
+		{
+			printf("%c ", CurrentLevel.map[i][j]);
+		}
+		printf("\n");
+	}
+		
+}
+
 bool saveConfig()
 {
 	FILE *file_Fp;
 	if ((file_Fp = fopen(config_file_name_ca, "w")) != NULL)
 	{
-		fprintf(file_Fp, "SPEED %i \n", CurrentGame.speed);
-		fprintf(file_Fp, "LIFES %i \n", CurrentGame.lifes);
-		fprintf(file_Fp, "POINTS %i \n", CurrentGame.points);
-		fprintf(file_Fp, "BALL_position %i %i \n", CurrentBall.position.X, CurrentBall.position.Y);
-		fprintf(file_Fp, "BALL_course %i %i \n", CurrentBall.course.X, CurrentBall.course.Y);
-		fprintf(file_Fp, "PLATFORM_position %i %i \n", CurrentPlatform.position.X, CurrentPlatform.position.Y);
-		fprintf(file_Fp, "LEVEL %s \n", CurrentLevel.name);
-		fprintf(file_Fp, "STATUS %s \n", CurrentGame.saveStatus);
+		fprintf(file_Fp, "%i \n", CurrentGame.speed);
+		fprintf(file_Fp, "%i \n", CurrentGame.lifes);
+		fprintf(file_Fp, "%i \n", CurrentGame.points);
+		fprintf(file_Fp, "%i %i \n", CurrentBall.position.X, CurrentBall.position.Y);
+		fprintf(file_Fp, "%i %i \n", CurrentBall.course.X, CurrentBall.course.Y);
+		fprintf(file_Fp, "%i %i \n", CurrentPlatform.position.X, CurrentPlatform.position.Y);
+		fprintf(file_Fp, "%i \n", CurrentLevel.number);
+		fprintf(file_Fp, "%i \n", CurrentGame.saveStatus);
 		for (int i = 0; i < CurrentLevel.Size_Strings; i++) 
 		{
 			for (int j = 0; j < CurrentLevel.Size_Columns; j++) 
@@ -143,11 +163,13 @@ bool saveConfig()
 			fprintf(file_Fp, "\n");
 		}
 		fclose(file_Fp);
+		system("cls");
+		printf("Сессия сохранена!");
 		return true;
 	} else {
 
+		system("cls");
 		printf("Не удается записать конфигурационные данные!!!");
-		
 		fclose(file_Fp);
 		return false;
 	}
@@ -159,22 +181,24 @@ bool readConfig()
 	if ((file_Fp = fopen(config_file_name_ca, "r")) != NULL)
 	{
 		//Считывание!!!
-		fscanf(file_Fp, "", &CurrentGame.speed);
-		fscanf(file_Fp, "", CurrentGame.lifes);
-		fscanf(file_Fp, "", CurrentGame.points);
-		fscanf(file_Fp, "", CurrentBall.position.X, CurrentBall.position.Y);
-		fscanf(file_Fp, "", CurrentBall.course.X, CurrentBall.course.Y);
-		fscanf(file_Fp, "", CurrentPlatform.position.X, CurrentPlatform.position.Y);
-		fscanf(file_Fp, "", CurrentLevel.name);
-		fscanf(file_Fp, "", CurrentGame.saveStatus);
-		if (CurrentGame.saveStatus == "LOAD") {
+		fscanf(file_Fp, "%i", &CurrentGame.speed);
+		fscanf(file_Fp, "%i", &CurrentGame.lifes);
+		fscanf(file_Fp, "%i", &CurrentGame.points);
+		fscanf(file_Fp, "%i %i", &CurrentBall.position.X, &CurrentBall.position.Y);
+		fscanf(file_Fp, "%i %i", &CurrentBall.course.X, &CurrentBall.course.Y);
+		fscanf(file_Fp, "%i %i", &CurrentPlatform.position.X, &CurrentPlatform.position.Y);
+		fscanf(file_Fp, "%i", &CurrentLevel.number);
+		fscanf(file_Fp, "%i", &CurrentGame.saveStatus);
+		if (CurrentGame.saveStatus == 1) {
 			for (int i = 0; i < Level::Size_Strings; i++) {
 				for (int j = 0; j < Level::Size_Columns; j++) {
-					fscanf(file_Fp, "%i", CurrentLevel.map[i][j]);
+					fscanf(file_Fp, "%c", CurrentLevel.map[i][j]);
 				}
 			}	
+			printf("Загружена прошлая игра!");
+		} else if (CurrentGame.saveStatus == 0) {
+			printf("Новая игра!");
 		}
-
 		fclose(file_Fp);
 		return true;
 	} else {
@@ -182,8 +206,24 @@ bool readConfig()
 			if ((file_Fp = fopen(config_file_name_ca, "r")) != NULL) 
 			{
 				// считывание!!!
-
-
+				fscanf(file_Fp, "%i", &CurrentGame.speed);
+				fscanf(file_Fp, "%i", &CurrentGame.lifes);
+				fscanf(file_Fp, "%i", &CurrentGame.points);
+				fscanf(file_Fp, "%i %i", &CurrentBall.position.X, &CurrentBall.position.Y);
+				fscanf(file_Fp, "%i %i", &CurrentBall.course.X, &CurrentBall.course.Y);
+				fscanf(file_Fp, "%i %i", &CurrentPlatform.position.X, &CurrentPlatform.position.Y);
+				fscanf(file_Fp, "%i", &CurrentLevel.number);
+				fscanf(file_Fp, "%i", &CurrentGame.saveStatus);
+				if (CurrentGame.saveStatus == 1) {
+					for (int i = 0; i < Level::Size_Strings; i++) {
+						for (int j = 0; j < Level::Size_Columns; j++) {
+							fscanf(file_Fp, "%c", CurrentLevel.map[i][j]);
+						}
+					}	
+				} else if (CurrentGame.saveStatus == 0) {
+					printf("Новая игра!");
+				}
+				fclose(file_Fp);
 				return true;
 			} else {
 				printf("Конфигурационный файл существует, но из него невозможно считать данные!");
@@ -203,7 +243,9 @@ int main (int argc, char **argv[])
 	setlocale(LC_CTYPE, "RUS");
 	//GetCurrentDirectoryA(FILE_PATH_BUF_DW, FILE_PATH_ca);
 	//printf(FILE_PATH_ca);
-	saveConfig();
+	if (readConfig()) {
+		printGame();
+	}
 
 	system("pause");
 	return 0;
