@@ -291,7 +291,7 @@ int main (int argc, char **argv[])
 	setlocale(LC_ALL, "Russian");
 	//GetCurrentDirectoryA(FILE_PATH_BUF_DW, FILE_PATH_ca);
 	//printf(FILE_PATH_ca);
-	/*
+	
 	saveConfig();
 	if (readConfig()) {
 		printGame();
@@ -300,19 +300,16 @@ int main (int argc, char **argv[])
 		saveConfig();
 	}
 	system("pause");	
-	*/
+	
 	int start = 1;
-	while (start) {
-		CurrentGa
-
-
-	}
-
+	//CurrentGame.Start();
 	return 0;
 }
 
-
-
+///////
+//////			LEVEL FUNCTIONS
+//////////
+///////////
 bool Level::loadLevel(int level) {
 		switch(level) {
 		case 1:
@@ -369,10 +366,38 @@ bool Level::loadLevel(int level) {
 	return false;
 }
 
-//
-// Реализация функций классов
-//
+void Level::End(bool status) {
+	system("cls");
+	char c;
+	if (status == true) {
+		printf("Уровень пройден: %i очков.\n", CurrentGame.points);
+		printf("Начать следующий уровень?\n");
+		scanf("%c", &c);
+		if (c == 'y' || c == 'Y') {
+			CurrentLevel.number++;
+			CurrentLevel.loadLevel(CurrentLevel.number);
+		} else {
+			saveConfig();
+			CurrentGame.End();
+		}
+	} else {
+		printf("Начать заново? (y/n)\n");
+		scanf("%c", &c);
+		if (c == 'y' || c == 'Y') {
+			CurrentPlatform.setStandard();
+			CurrentBall.setStandard();
+			CurrentPlatform.setStandard();
 
+
+		}
+	}
+}
+
+
+///////////
+//////////
+//////////        BALL FUNCTIONS
+//////////
 void Ball::collision() {
 	//Столкновение с платформой!
 	if ((this->position.X >= CurrentPlatform.position.X && 
@@ -472,80 +497,11 @@ void Ball::collision() {
 	}
 }
 
-void Game::increasePoints(char c) {
-	this->points += 100;
-	//Прибавление очков в зависимости от разрушенного блока!
-}
-void Game::destroyBlock(int y, int x) {
-	CurrentLevel.map[y][x] = 32;
-}
-
-void Game::render() { //our painter
-	goToXY(0,0);// at first - come to 0,0
-	for (int i=0; i<Level::Size_Strings; i++)
-	{
-		for (int j=0; j<Level::Size_Columns; j++) 
-		{
-			if (CurrentPlatform.position.X == j && CurrentPlatform.position.Y == i)
-			{
-				for(int k = 0; k < CurrentPlatform.length; k++) 
-					printf("%c", CurrentPlatform.symbol);
-				continue;
-			}
-			else {
-				printf("%c", CurrentLevel.map[i][j]);
-			}
-		}
-		printf("\n");
-	}
-
-}
-
-void Level::End(bool status) {
-	system("cls");
-	char c;
-	if (status == true) {
-		printf("Уровень пройден: %i очков.\n", CurrentGame.points);
-		printf("Начать следующий уровень?\n");
-		scanf("%c", &c);
-		if (c == 'y' || c == 'Y') {
-			CurrentLevel.number++;
-			CurrentLevel.loadLevel(CurrentLevel.number);
-		} else {
-			saveConfig();
-			CurrentGame.End();
-		}
-	} else {
-		printf("Начать заново? (y/n)\n");
-		scanf("%c", &c);
-		if (c == 'y' || c == 'Y') {
-			CurrentPlatform.setStandard();
-			CurrentBall.setStandard();
-			CurrentPlatform.setStandard();
-
-
-		}
-	}
-}
-
-bool Game::End(bool status) { // перенести функцию в Level.End
-
-		printf("Сохранить сессию?");
-		char c;
-		scanf("%c", &c);
-		if (c == 'y' || c == 'Y') {
-			CurrentGame.saveStatus = 1;
-			saveConfig();
-		} else {
-			CurrentGame.saveStatus = 0;
-			saveConfig();
-		}
-		
-
-
-}
-
-bool Platform::outOfSize(char course){
+////////////
+////////////
+////////////			GAME FUNCTIONS
+////////////
+bool Platform::outOfSize(int course){
 	// обработка выхода за экран
 	if(this->position.Y == 0 && course == 1) {
 		return false;
@@ -563,7 +519,7 @@ bool Platform::outOfSize(char course){
 
 }
 
-bool Platform::blockCollision(char course){
+bool Platform::blockCollision(int course){
 	//Столкновение с блоками
 	if (course == 1) {//^
 		for(int i = 0; i < this->length; i++) {
@@ -623,7 +579,7 @@ bool Platform::ballCollision(int course) {
 	return true; // если нет препятствий - то возвращаем тру
 }
 
-bool Platform::step(int course){
+void Platform::step(int course){
 	switch(course) {
 	case 1:
 		this->position.Y--;
@@ -644,6 +600,7 @@ bool Platform::step(int course){
 bool Platform::moveControl(int course){
 	if (this->outOfSize(course) && this->ballCollision(course) && this->blockCollision(course))
 		this->step(course);
+	return true;
 }
 
 void Ball::step(){
@@ -659,6 +616,10 @@ void Ball::step(){
 	}
 
 }
+////////////
+/////////// GAME FUNCTIONS
+////////////
+///////////
 
 void Game::Start() {
 	int IR1 = 0;
@@ -708,5 +669,49 @@ void Game::Start() {
 	Sleep(1000);
 	CurrentBall.collision();
 	}//end while
+}
+
+
+void Game::increasePoints(char c) {
+	this->points += 100;
+	//Прибавление очков в зависимости от разрушенного блока!
+}
+void Game::destroyBlock(int y, int x) {
+	CurrentLevel.map[y][x] = 32;
+}
+
+void Game::render() { //our painter
+	goToXY(0,0);// at first - come to 0,0
+	for (int i=0; i<Level::Size_Strings; i++)
+	{
+		for (int j=0; j<Level::Size_Columns; j++) 
+		{
+			if (CurrentPlatform.position.X == j && CurrentPlatform.position.Y == i)
+			{
+				for(int k = 0; k < CurrentPlatform.length; k++) 
+					printf("%c", CurrentPlatform.symbol);
+				continue;
+			}
+			else {
+				printf("%c", CurrentLevel.map[i][j]);
+			}
+		}
+		printf("\n");
+	}
 
 }
+
+void Game::End() { // перенести функцию в Level.End
+	printf("Сохранить сессию?");
+	char c;
+	scanf("%c", &c);
+	if (c == 'y' || c == 'Y') {
+		CurrentGame.saveStatus = 1;
+	} else {
+		CurrentGame.saveStatus = 0;
+	}
+	saveConfig();		
+
+}
+
+
