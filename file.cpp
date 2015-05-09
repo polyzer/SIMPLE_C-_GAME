@@ -283,15 +283,17 @@ bool readConfig() // чтение и загрузка конфигурации
 
 	}
 }
-
-
+///////
+///////
+/////////			MAIN FUNCTION
+//////////
 
 int main (int argc, char **argv[]) 
 {
 	setlocale(LC_ALL, "Russian");
 	//GetCurrentDirectoryA(FILE_PATH_BUF_DW, FILE_PATH_ca);
 	//printf(FILE_PATH_ca);
-	
+/*	
 	saveConfig();
 	if (readConfig()) {
 		printGame();
@@ -300,11 +302,13 @@ int main (int argc, char **argv[])
 		saveConfig();
 	}
 	system("pause");	
-	
+*/	
 	int start = 1;
-	//CurrentGame.Start();
+	CurrentGame.Start();
 	return 0;
 }
+
+
 
 ///////
 //////			LEVEL FUNCTIONS
@@ -402,8 +406,8 @@ void Ball::collision() {
 	//Столкновение с платформой!
 	if ((this->position.X >= CurrentPlatform.position.X && 
 		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
-		 (this->position.Y == (CurrentPlatform.position.X - 1) || 
-		  this->position.Y == (CurrentPlatform.position.X - 1)
+		 (this->position.Y == (CurrentPlatform.position.Y - 1) || 
+		  this->position.Y == (CurrentPlatform.position.Y - 1)
 		 )
 	   ) 
 	{
@@ -419,7 +423,7 @@ void Ball::collision() {
 		(((this->position.X - 1) == (CurrentPlatform.position.X - 1)) ||
 		 ((this->position.X + 1) == (CurrentPlatform.position.X + CurrentPlatform.length))
 		) &&  (((this->position.Y - 1) == (CurrentPlatform.position.Y - 1)) ||
-		 ((this->position.Y + 1) == (CurrentPlatform.position.X + CurrentPlatform.length))
+		 ((this->position.Y + 1) == (CurrentPlatform.position.Y + 1))
 		)
 	) {
 		this->course.X = -(this->course.X);
@@ -432,21 +436,25 @@ void Ball::collision() {
 		CurrentGame.increasePoints(CurrentLevel.map[this->position.Y + 1][this->position.X]); // очки за столкновение
 		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
+		i++;
 	}
 	if (CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X + 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
+		i++;
 	}
 	if (CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y - 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
+		i++;
 	}
 	if (CurrentLevel.map[this->position.Y][this->position.X - 1] != CurrentLevel.back) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X - 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
+		i++;
 	}	
 	//Столкновения по диагонали
 	if (i == 0) { //Если не случилось столкновений по горизонтали/вертикали, то обрабатываем диагональные
@@ -692,9 +700,12 @@ void Game::render() { //our painter
 					printf("%c", CurrentPlatform.symbol);
 				continue;
 			}
-			else {
+			else if (CurrentBall.position.X == j && CurrentBall.position.Y == i) {
+				printf("%c", CurrentBall.symbol);
+			}else {
 				printf("%c", CurrentLevel.map[i][j]);
 			}
+
 		}
 		printf("\n");
 	}
