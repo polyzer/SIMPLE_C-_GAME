@@ -5,108 +5,152 @@
 #include <conio.h>
 #include <cstring>
 
-class Level {
+struct Level {
 public:
-	static const int Size_Strings = 10;
-	static const int Size_Columns = 20;
-	int number;
-	char map [Size_Strings][Size_Columns];
+	static const int Size_Strings = 10; // размер по Y
+	static const int Size_Columns = 20; //размер по X
+	int number; // номер уровня
+	char back; // background
+	char map [Size_Strings][Size_Columns]; // карта уровня
 	Level() {
-		this->number = 1;
-		this->setLevel(1);
+		this->number = 1; // устанавливаем первый уровень
+		this->loadLevel(this->number); // вначале грузим первый уровень
+		this->back = 32;
 	}
 	~Level() {
 		//free(this->name);
 	}
-	bool setLevel(int level) {
-		switch(level) {
-		case 1:
-			for (int i = 0; i < this->Size_Strings; i++) {
-				for (int j = 0; j < this->Size_Columns; j++) {
-					if (i == 0) {
-						this->map[i][j] = 110;
-					} else
-					if (i == 1) {
-						this->map[i][j] = 101;
-					} else
-					if (i == 2) {
-						this->map[i][j] = 102;
-					} else {
-						this->map[i][j] = 100;
-					}
-				}
-			}
-			//free(this->name);
-			this->number = 1;
-			printf("Level was created");
-			return true;
-			break;
-		}
-	return false;
+	bool loadLevel(int level); //загружает уровень в зависимости от номера
+	void End(bool status); // отслеживает окончание уровня
+};
+
+struct Platform {
+	char symbol; // символы используемые в качестве платформы
+	char color; //цвет платформы
+	char length; //длина платформы
+	COORD position; // координаты левого конца
+	Platform() {
+		this->setStandard(); //
 	}
 
-};
-/*
-class First_Level : Level {
-public:
-	First_Level() {
-		this->name = "First_Level";
+	void setStandard() { // установка начальных параметров платформы
+		this->symbol = 110; //
+		this->color = 10; //
+		this->length = 3; //
+		this->position.X = (Level::Size_Columns/2 - 1); // позиция о X
+		this->position.Y = (Level::Size_Strings - 2); // позиция по Y
 		
 	}
-};
-*/
-struct Platform {
-	char symbol;
-	char color;
-	char length;
-	COORD position;
-	Platform() {
-		this->symbol = 110;
-		this->color = 10;
-		this->length = 3;
-		this->position.X = (Level::Size_Columns/2 - 1);
-		this->position.Y = (Level::Size_Strings - 2);
+
+	void setPosition(COORD pos) {
+		this->position.X = pos.X;
+		this->position.Y = pos.Y;
 	}
+	void setColor(int col) {
+		this->color = col;
+	}
+	bool moveControl(int control);//Глобальная функция проверки перемещения
+	bool outOfSize(int control);//Проверка выхода за границы экрана
+	bool blockCollision(int control);//Проверка столкновения с блоком
+	bool ballCollision(int control);//Проверка столкновения с мячом
+	void step(int course); //перемещение
 };
 
 struct Ball {
-	COORD position;
-	COORD course;
-	char symbol;
+	COORD position; // позиция мяча
+	COORD course; // направление мяча
+	char symbol; //цвет символа
+	int color; //цвет мяча
 	Ball() {
-		this->course.X = 0;
-		this->course.Y = 0;
+		this->setStandard();
+	}
+
+	void setStandard() {//установка начального положения мяча
+		this->course.X = 1; // 1 - вправо, -1 - влево
+		this->course.Y = 1;// 1 - вверх, -1 - вниз
 		this->position.X = (Level::Size_Columns/2);
 		this->position.Y = (Level::Size_Strings - 3);
-		this->symbol = 4;
+		this->symbol = 4;	
 	}
+
+	void setPosition(COORD pos) {
+		this->position.X = pos.X;
+		this->position.Y = pos.Y;
+	}
+	void setColor(int col) {
+		this->color = col;
+	}
+	void step(); // шаг мяча
+	void setCourse(int side); //1 - вправо, 0 - влево
+	void collision(); //столкновения и выход за границы окна
+
 };
 struct Game {
-	int lifes;
-	long points;
-	int speed;
-	char stopSymbol;
-	int saveStatus;
+	int lifes; //жизни
+	long points; // очки игрока
+	int speed; // текущая скорость игры
+	int maxSpeed; // максимальная скорость игры
+	int minSpeed; // начальная скорость игры
+	char stopSymbol; // символ, по нажатию на который игра прерывается!
+	int saveStatus; // статус сохранения: 0 - новая игра, 1 - загрузка
 	Game() {
-		stopSymbol = 113; //q
+		this->setStandard();
+	}
+
+	void setStandard() { // устанавливает начальные значения
+		maxSpeed = 1;
+		minSpeed = 100;
+		stopSymbol = 113; //символ оканчивающий игру
 		lifes = 3;
 		points = 0;
 		speed = 10;
 		saveStatus = 0; //0 - new, 1 - load
 	}
+
+	void increasePoints(char c); // увеличивает очки в зависимости от элемента
+	void setSpeed(); // изменяет скорость
+	void setLifes(); //изменяет количество попыток
+	void render(); //рисует все
+	void destroyBlock(int y, int x); // обработка уничтожения блоков
+	void Start(); // Начало игры
+	void End(); //Конец уровня!
 };
 
-Level CurrentLevel;
-Platform CurrentPlatform;	
-Ball CurrentBall;
-Game CurrentGame;
+Level CurrentLevel; // объект уровня
+Platform CurrentPlatform;// объект платформы
+Ball CurrentBall; //объект мяча
+Game CurrentGame; // объект текущей игры
+HANDLE hConsole; // обработчик
 
-char config_file_name_ca[] = "config.cnf";
-DWORD FILE_PATH_BUF_DW = 255;
-char FILE_PATH_ca [255];
+char config_file_name_ca[] = "config.cnf"; //файл конфигурации
+//DWORD FILE_PATH_BUF_DW = 255;
+//char FILE_PATH_ca [255];
 
 
-bool createConfig() 
+void goToXY(int col, int row) //перемещение на нужную позицию
+{ // come to position
+	
+	COORD coord; //coordinate
+	coord.X = col;
+	coord.Y = row;
+
+	HANDLE hConsoleComeTo = GetStdHandle(STD_OUTPUT_HANDLE); // catch a handler
+	SetConsoleCursorPosition(hConsoleComeTo, coord); //set cursor's position
+
+}
+
+void setElementColor(){
+
+	SetConsoleTextAttribute(hConsole, 14);
+
+}
+
+
+
+
+
+
+bool createConfig() //создание файла концигурации
 {
 	FILE *config_Fp;
 	if ((config_Fp = fopen(config_file_name_ca, "w")) != NULL)
@@ -121,7 +165,7 @@ bool createConfig()
 
 }
 
-void printGame() {
+void printGame() { // выводит на экран текущие показатели
 	printf("%i \n", CurrentGame.speed);
 	printf("%i \n", CurrentGame.lifes);
 	printf("%i \n", CurrentGame.points);
@@ -141,7 +185,7 @@ void printGame() {
 		
 }
 
-bool saveConfig()
+bool saveConfig() // сохранение концигурации при выходе
 {
 	FILE *file_Fp;
 	if ((file_Fp = fopen(config_file_name_ca, "w")) != NULL)
@@ -175,7 +219,7 @@ bool saveConfig()
 	}
 }
 
-bool readConfig()
+bool readConfig() // чтение и загрузка конфигурации
 {
 	FILE *file_Fp;
 	if ((file_Fp = fopen(config_file_name_ca, "r")) != NULL)
@@ -197,6 +241,7 @@ bool readConfig()
 			}	
 			printf("Загружена прошлая игра!");
 		} else if (CurrentGame.saveStatus == 0) {
+			CurrentLevel.loadLevel(CurrentLevel.number);
 			printf("Новая игра!");
 		}
 		fclose(file_Fp);
@@ -221,6 +266,7 @@ bool readConfig()
 						}
 					}	
 				} else if (CurrentGame.saveStatus == 0) {
+					CurrentLevel.loadLevel(CurrentLevel.number);
 					printf("Новая игра!");
 				}
 				fclose(file_Fp);
@@ -238,15 +284,429 @@ bool readConfig()
 	}
 }
 
+
+
 int main (int argc, char **argv[]) 
 {
-	setlocale(LC_CTYPE, "RUS");
+	setlocale(LC_ALL, "Russian");
 	//GetCurrentDirectoryA(FILE_PATH_BUF_DW, FILE_PATH_ca);
 	//printf(FILE_PATH_ca);
+	/*
+	saveConfig();
 	if (readConfig()) {
 		printGame();
+		system("pause");
+		system("cls");
+		saveConfig();
+	}
+	system("pause");	
+	*/
+	int start = 1;
+	while (start) {
+		CurrentGa
+
+
 	}
 
-	system("pause");
 	return 0;
+}
+
+
+
+bool Level::loadLevel(int level) {
+		switch(level) {
+		case 1:
+			for (int i = 0; i < this->Size_Strings; i++) {
+				for (int j = 0; j < this->Size_Columns; j++) {
+					if (i == 0) {
+						this->map[i][j] = 110;
+					} else
+					if (i == 1) {
+						this->map[i][j] = 103;
+					} else
+					if (i == 2) {
+						this->map[i][j] = 102;
+					} else {
+						this->map[i][j] = 32;
+					}
+				}
+			}
+			//free(this->name);
+			this->number = 1;
+			CurrentBall.position.X = 0;
+			CurrentGame.setStandard();
+			CurrentPlatform.setStandard();
+
+			printf("Level was created");
+			return true;
+		break;
+		case 2:
+			for (int i = 0; i < this->Size_Strings; i++) {
+				for (int j = 0; j < this->Size_Columns; j++) {
+					if (i == 0) {
+						this->map[i][j] = 111;
+					} else
+					if (i == 1) {
+						this->map[i][j] = 101;
+					} else
+					if (i == 2) {
+						this->map[i][j] = 107;
+					} else {
+						this->map[i][j] = 32;
+					}
+				}
+			}
+			//free(this->name);
+			this->number = 2;
+			CurrentBall.position.X = 0;
+			CurrentGame.setStandard();
+			CurrentPlatform.setStandard();
+
+			printf("Level was created");
+			return true;
+		break;
+		}
+	return false;
+}
+
+//
+// Реализация функций классов
+//
+
+void Ball::collision() {
+	//Столкновение с платформой!
+	if ((this->position.X >= CurrentPlatform.position.X && 
+		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 (this->position.Y == (CurrentPlatform.position.X - 1) || 
+		  this->position.Y == (CurrentPlatform.position.X - 1)
+		 )
+	   ) 
+	{
+		this->course.Y = -(this->course.Y);
+	}
+	if ((this->position.X == (CurrentPlatform.position.X - 1) || 
+		 this->position.X == (CurrentPlatform.position.X - 1)
+		) && this->position.Y == CurrentPlatform.position.Y
+	) {
+		this->course.X = -(this->course.X);
+	}
+	if(
+		(((this->position.X - 1) == (CurrentPlatform.position.X - 1)) ||
+		 ((this->position.X + 1) == (CurrentPlatform.position.X + CurrentPlatform.length))
+		) &&  (((this->position.Y - 1) == (CurrentPlatform.position.Y - 1)) ||
+		 ((this->position.Y + 1) == (CurrentPlatform.position.X + CurrentPlatform.length))
+		)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	// КОНЕЦ обработки столкновений с платформой
+	//Столкновение с блоками
+	int i = 0; //счетчик столкновений
+	if (CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) {
+		CurrentGame.increasePoints(CurrentLevel.map[this->position.Y + 1][this->position.X]); // очки за столкновение
+		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
+		this->course.Y = -(this->course.Y);
+	}
+	if (CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) {
+		CurrentGame.points += 100; // очки за столкновение
+		CurrentLevel.map[this->position.Y][this->position.X + 1] = CurrentLevel.back;
+		this->course.X = -(this->course.X);
+	}
+	if (CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back) {
+		CurrentGame.points += 100; // очки за столкновение
+		CurrentLevel.map[this->position.Y - 1][this->position.X] = CurrentLevel.back;
+		this->course.Y = -(this->course.Y);
+	}
+	if (CurrentLevel.map[this->position.Y][this->position.X - 1] != CurrentLevel.back) {
+		CurrentGame.points += 100; // очки за столкновение
+		CurrentLevel.map[this->position.Y][this->position.X - 1] = CurrentLevel.back;
+		this->course.X = -(this->course.X);
+	}	
+	//Столкновения по диагонали
+	if (i == 0) { //Если не случилось столкновений по горизонтали/вертикали, то обрабатываем диагональные
+		if (CurrentLevel.map[this->position.Y + 1][this->position.X + 1] != CurrentLevel.back) {
+			CurrentGame.points += 100;// очки за столкновение
+			CurrentLevel.map[this->position.Y + 1][this->position.X + 1] = CurrentLevel.back;
+			i++;
+		}
+		if (CurrentLevel.map[this->position.Y - 1][this->position.X + 1] != CurrentLevel.back) {
+			CurrentGame.points += 100;// очки за столкновение
+			CurrentLevel.map[this->position.Y - 1][this->position.X + 1] = CurrentLevel.back;
+			i++;
+		}
+		if (CurrentLevel.map[this->position.Y - 1][this->position.X - 1] != CurrentLevel.back) {
+			CurrentGame.points += 100;// очки за столкновение
+			CurrentLevel.map[this->position.Y - 1][this->position.X - 1] = CurrentLevel.back;
+			i++;
+		}
+		if (CurrentLevel.map[this->position.Y + 1][this->position.X - 1] != CurrentLevel.back) {
+			CurrentGame.points += 100; // очки за столкновение
+			CurrentLevel.map[this->position.Y + 1][this->position.X - 1] = CurrentLevel.back;
+			i++;
+		}
+		if (i != 0) {
+			this->course.Y = -(this->course.Y);
+			this->course.X = -(this->course.X);	
+		}
+	}
+	//Конец обработки столкновений с блоками
+	// обработка выхода за экран!
+	if (this->position.X == 0) {
+		this->course.X = -(this->course.X);
+	}
+	if (this->position.Y == 0) {
+		this->course.Y = -(this->course.Y);
+	}
+	if (this->position.X == (CurrentLevel.Size_Columns - 2)) {
+		this->course.X = -(this->course.X);
+	}
+	if (this->position.Y == (CurrentLevel.Size_Strings - 2)) {
+		// Проигрыш!!!!
+		CurrentBall.setStandard(); //установка начального положения шара
+		CurrentPlatform.setStandard(); //установка начального положения платформы
+		CurrentGame.lifes--;
+		if (CurrentGame.lifes == 0) {
+			// обработка конца игры!
+		}
+	}
+}
+
+void Game::increasePoints(char c) {
+	this->points += 100;
+	//Прибавление очков в зависимости от разрушенного блока!
+}
+void Game::destroyBlock(int y, int x) {
+	CurrentLevel.map[y][x] = 32;
+}
+
+void Game::render() { //our painter
+	goToXY(0,0);// at first - come to 0,0
+	for (int i=0; i<Level::Size_Strings; i++)
+	{
+		for (int j=0; j<Level::Size_Columns; j++) 
+		{
+			if (CurrentPlatform.position.X == j && CurrentPlatform.position.Y == i)
+			{
+				for(int k = 0; k < CurrentPlatform.length; k++) 
+					printf("%c", CurrentPlatform.symbol);
+				continue;
+			}
+			else {
+				printf("%c", CurrentLevel.map[i][j]);
+			}
+		}
+		printf("\n");
+	}
+
+}
+
+void Level::End(bool status) {
+	system("cls");
+	char c;
+	if (status == true) {
+		printf("Уровень пройден: %i очков.\n", CurrentGame.points);
+		printf("Начать следующий уровень?\n");
+		scanf("%c", &c);
+		if (c == 'y' || c == 'Y') {
+			CurrentLevel.number++;
+			CurrentLevel.loadLevel(CurrentLevel.number);
+		} else {
+			saveConfig();
+			CurrentGame.End();
+		}
+	} else {
+		printf("Начать заново? (y/n)\n");
+		scanf("%c", &c);
+		if (c == 'y' || c == 'Y') {
+			CurrentPlatform.setStandard();
+			CurrentBall.setStandard();
+			CurrentPlatform.setStandard();
+
+
+		}
+	}
+}
+
+bool Game::End(bool status) { // перенести функцию в Level.End
+
+		printf("Сохранить сессию?");
+		char c;
+		scanf("%c", &c);
+		if (c == 'y' || c == 'Y') {
+			CurrentGame.saveStatus = 1;
+			saveConfig();
+		} else {
+			CurrentGame.saveStatus = 0;
+			saveConfig();
+		}
+		
+
+
+}
+
+bool Platform::outOfSize(char course){
+	// обработка выхода за экран
+	if(this->position.Y == 0 && course == 1) {
+		return false;
+	}
+	if((this->position.X + this->length - 1) >= Level::Size_Columns && course == 2) {
+		return false;
+	}
+	if((this->position.Y + this->length - 1) >= Level::Size_Strings && course == 3) {
+		return false;
+	}
+	if(this->position.X == 0 && course == 4) {
+		return false;
+	}
+	return true;
+
+}
+
+bool Platform::blockCollision(char course){
+	//Столкновение с блоками
+	if (course == 1) {//^
+		for(int i = 0; i < this->length; i++) {
+			if (CurrentLevel.map[this->position.Y - 1][this->position.X + i] != CurrentLevel.back) {
+				return false;
+			}
+		}
+	}
+	if (course == 2) {//->
+		if (CurrentLevel.map[this->position.Y][this->position.X + this->length] != CurrentLevel.back) {
+			return false;
+		}
+	}
+	if (course == 3) {//\/
+		for(int i = 0; i < this->length; i++) {
+			if (CurrentLevel.map[this->position.Y + 1][this->position.X + i] != CurrentLevel.back) {
+				return false;
+			}
+		}
+	}
+	if (course == 4) {//<-
+		if (CurrentLevel.map[this->position.Y][this->position.X  - 1] != CurrentLevel.back) {
+			return false;
+		}
+	}
+
+	return true; // если нет препятствий - то возвращаем тру
+}
+
+bool Platform::ballCollision(int course) {
+		//Столкновение с блоками
+	if (course == 1) {//^
+		for(int i = 0; i < this->length; i++) {
+			if (this->position.Y == (CurrentBall.position.Y - 1) && (this->position.X + i) == CurrentBall.position.X){
+				return false;
+			}
+		}
+	}
+	if (course == 2) {//->
+		if (this->position.Y == (CurrentBall.position.Y - 1) && (this->position.X + this->length) == CurrentBall.position.X) {
+			return false;
+		}
+	}
+	if (course == 3) {//\/
+		for(int i = 0; i < this->length; i++) {
+			if (this->position.Y == (CurrentBall.position.Y + 1) && (this->position.X + i) == CurrentBall.position.X){
+				return false;
+			}
+		}
+	}
+	if (course == 4) {//<-
+		if (this->position.Y == (CurrentBall.position.Y + 1) && (this->position.X + this->length) == CurrentBall.position.X) {
+			return false;
+		}
+	}
+
+	return true; // если нет препятствий - то возвращаем тру
+}
+
+bool Platform::step(int course){
+	switch(course) {
+	case 1:
+		this->position.Y--;
+		break;
+	case 2:
+		this->position.X++;
+		break;
+	case 3:
+		this->position.Y++;
+		break;
+	case 4:
+		this->position.X--;
+		break;
+	}
+}
+
+
+bool Platform::moveControl(int course){
+	if (this->outOfSize(course) && this->ballCollision(course) && this->blockCollision(course))
+		this->step(course);
+}
+
+void Ball::step(){
+	if (this->course.X > 0) {
+		this->position.X++;
+	}else {
+		this->position.X--;
+	}
+	if (this->course.Y > 0) {
+		this->position.Y++;
+	}else {
+		this->position.Y--;
+	}
+
+}
+
+void Game::Start() {
+	int IR1 = 0;
+	int IR2 = 0;
+//		render();
+	while (true) {		
+		if (_kbhit()) {
+			IR1 = _getch();
+			if (IR1 == 224) {
+				IR2 = _getch();
+				if (IR2 == 75) {
+					if(CurrentPlatform.moveControl(4))
+					{
+						CurrentPlatform.step(4);
+					}	
+					//continue;
+				}
+				if (IR2 == 77) {
+					if(CurrentPlatform.moveControl(2))
+					{
+						CurrentPlatform.step(2);
+					}	
+					//continue;
+				}
+				if (IR2 == 72) {
+					if(CurrentPlatform.moveControl(1))
+					{
+						CurrentPlatform.step(1);
+					}	
+					//continue;
+				}
+				if (IR2 == 80) {
+					if(CurrentPlatform.moveControl(3))
+					{
+						CurrentPlatform.step(3);
+					}	
+					//continue;
+				}
+			}
+			if (IR1 == 27) {
+				break;
+			}
+		}
+	CurrentBall.collision();
+	CurrentBall.step();
+	this->render();
+	Sleep(1000);
+	CurrentBall.collision();
+	}//end while
+
 }
