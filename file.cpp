@@ -5,6 +5,11 @@
 #include <conio.h>
 #include <cstring>
 
+struct pos {
+	int X;
+	int Y;
+};
+
 struct Level {
 public:
 	static const int Size_Strings = 10; // размер по Y
@@ -28,7 +33,7 @@ struct Platform {
 	char symbol; // символы используемые в качестве платформы
 	char color; //цвет платформы
 	char length; //длина платформы
-	COORD position; // координаты левого конца
+	pos position; // координаты левого конца
 	Platform() {
 		this->setStandard(); //
 	}
@@ -42,7 +47,7 @@ struct Platform {
 		
 	}
 
-	void setPosition(COORD pos) {
+	void setPosition(pos pos) {
 		this->position.X = pos.X;
 		this->position.Y = pos.Y;
 	}
@@ -57,8 +62,8 @@ struct Platform {
 };
 
 struct Ball {
-	COORD position; // позиция мяча
-	COORD course; // направление мяча
+	pos position; // позиция мяча
+	pos course; // направление мяча
 	char symbol; //цвет символа
 	int color; //цвет мяча
 	Ball() {
@@ -67,13 +72,13 @@ struct Ball {
 
 	void setStandard() {//установка начального положения мяча
 		this->course.X = 1; // 1 - вправо, -1 - влево
-		this->course.Y = 1;// 1 - вверх, -1 - вниз
+		this->course.Y = -1;// 1 - вниз, -1 - вверх
 		this->position.X = (Level::Size_Columns/2);
-		this->position.Y = (Level::Size_Strings - 3);
+		this->position.Y = 4;
 		this->symbol = 4;	
 	}
 
-	void setPosition(COORD pos) {
+	void setPosition(pos pos) {
 		this->position.X = pos.X;
 		this->position.Y = pos.Y;
 	}
@@ -468,9 +473,9 @@ void Ball::collision() {
 	// КОНЕЦ обработки столкновений с платформой
 	//Столкновение с блоками
 	int i = 0; //счетчик столкновений
-	if ((CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) && (this->course.Y < 0)) {
+	if ((CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back) && (this->course.Y < 0)) {
 		CurrentGame.points += 100; // очки за столкновение
-		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
+		CurrentLevel.map[this->position.Y - 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
@@ -480,9 +485,9 @@ void Ball::collision() {
 		this->course.X = -(this->course.X);
 		i++;
 	}
-	if ((CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back) && (this->course.Y > 0)) {
+	if ((CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) && (this->course.Y > 0)) {
 		CurrentGame.points += 100; // очки за столкновение
-		CurrentLevel.map[this->position.Y - 1][this->position.X] = CurrentLevel.back;
+		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
@@ -529,22 +534,22 @@ void Ball::collision() {
 	}
 	//Конец обработки столкновений с блоками
 	// обработка выхода за экран!
-	if ((this->position.X == 0) && (this->course.X < 0)) {
+	if ((this->position.X <= 0) && (this->course.X < 0)) {
 		this->course.X = -(this->course.X);
 	}
-	if ((this->position.Y == 0) && (this->course.Y < 0)) {
+	if ((this->position.Y <= 0) && (this->course.Y < 0)) {
 		this->course.Y = -(this->course.Y);
 	}
-	if ((this->position.X == (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
+	if ((this->position.X >= (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
 		this->course.X = -(this->course.X);
 	}
-	if ((this->position.Y == (CurrentLevel.Size_Strings - 1)) && (this->course.Y > 0)) {
+	if ((this->position.Y >= (CurrentLevel.Size_Strings - 1)) && (this->course.Y > 0)) {
 		// Проигрыш!!!!
 		CurrentGame.lifes--;
 		CurrentBall.setStandard(); //установка начального положения шара
 		CurrentPlatform.setStandard(); //установка начального положения платформы
 		if (CurrentGame.lifes == 0) {
-			// обработка конца игры!
+		//	 обработка конца игры!
 			CurrentLevel.End(false);
 		}
 	}
@@ -603,10 +608,6 @@ bool Platform::blockCollision(int course){
 }
 
 
-//////////////////
-/////////////////			!!!!!!!!!!!!!!!
-//////////////////!!!!!!!!!!!!!! ИСПРАВИТЬ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.
-
 bool Platform::ballCollision(int course) {
 		//Столкновение с мячом
 	if (course == 3) {//\/
@@ -656,9 +657,12 @@ void Platform::step(int course){
 
 
 bool Platform::moveControl(int course){
-	if (this->outOfSize(course) && this->ballCollision(course) && this->blockCollision(course))
-		this->step(course);
-	return true;
+	if ((this->outOfSize(course) && this->ballCollision(course)) && this->blockCollision(course)){		
+		return true;
+	} else {
+		return false;
+	}
+
 }
 
 void Ball::step(){
@@ -668,9 +672,9 @@ void Ball::step(){
 		this->position.X--;
 	}
 	if (this->course.Y > 0) {
-		this->position.Y--;
-	}else {
 		this->position.Y++;
+	}else {
+		this->position.Y--;
 	}
 
 }
@@ -735,7 +739,7 @@ void Game::increasePoints(char c) {
 	//Прибавление очков в зависимости от разрушенного блока!
 }
 void Game::destroyBlock(int y, int x) {
-	CurrentLevel.map[y][x] = 32;
+	CurrentLevel.map[y][x] = CurrentLevel.back;
 }
 
 void Game::render() { //our painter
@@ -748,10 +752,13 @@ void Game::render() { //our painter
 			{
 				for(int k = 0; k < CurrentPlatform.length; k++) 
 					printf("%c", CurrentPlatform.symbol);
+				j += (CurrentPlatform.length - 1); // j
 				continue;
 			}
 			else if (CurrentBall.position.X == j && CurrentBall.position.Y == i) {
 				printf("%c", CurrentBall.symbol);
+				j++;
+				continue;
 			}else {
 				printf("%c", CurrentLevel.map[i][j]);
 			}
