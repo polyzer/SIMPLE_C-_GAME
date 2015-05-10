@@ -74,7 +74,7 @@ struct Ball {
 		this->course.X = 1; // 1 - вправо, -1 - влево
 		this->course.Y = -1;// 1 - вниз, -1 - вверх
 		this->position.X = (Level::Size_Columns/2);
-		this->position.Y = 4;
+		this->position.Y = (Level::Size_Strings/2);
 		this->symbol = 4;	
 	}
 
@@ -410,7 +410,7 @@ void Level::End(bool status) {
 void Ball::collision() {
 	//Столкновение с платформой!
 	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
-		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
 		 (this->position.Y == (CurrentPlatform.position.Y - 1)) &&
 		  (this->course.Y > 0)
 		 )
@@ -418,7 +418,7 @@ void Ball::collision() {
 		this->course.Y = -(this->course.Y);
 	}
 	if ((this->position.X >= CurrentPlatform.position.X && 
-		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
 		 (this->position.Y == (CurrentPlatform.position.Y + 1)) &&
 		  (this->course.Y < 0)
 		 )
@@ -543,7 +543,7 @@ void Ball::collision() {
 	if ((this->position.X >= (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
 		this->course.X = -(this->course.X);
 	}
-	if ((this->position.Y >= (CurrentLevel.Size_Strings - 1)) && (this->course.Y > 0)) {
+	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
 		// Проигрыш!!!!
 		CurrentGame.lifes--;
 		CurrentBall.setStandard(); //установка начального положения шара
@@ -757,7 +757,6 @@ void Game::render() { //our painter
 			}
 			else if (CurrentBall.position.X == j && CurrentBall.position.Y == i) {
 				printf("%c", CurrentBall.symbol);
-				j++;
 				continue;
 			}else {
 				printf("%c", CurrentLevel.map[i][j]);
