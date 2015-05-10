@@ -404,27 +404,63 @@ void Level::End(bool status) {
 //////////
 void Ball::collision() {
 	//Столкновение с платформой!
-	if ((this->position.X >= CurrentPlatform.position.X && 
+	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
 		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
-		 (this->position.Y == (CurrentPlatform.position.Y - 1) || 
-		  this->position.Y == (CurrentPlatform.position.Y + 1)
+		 (this->position.Y == (CurrentPlatform.position.Y - 1)) &&
+		  (this->course.Y < 0)
 		 )
-	   ) 
 	{
 		this->course.Y = -(this->course.Y);
 	}
-	if ((this->position.X - 1 == (CurrentPlatform.position.X - 1) || 
-		(this->position.X + 1) == (CurrentPlatform.position.X + CurrentPlatform.length)
+	if ((this->position.X >= CurrentPlatform.position.X && 
+		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 (this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		  (this->course.Y > 0)
+		 )
+	{
+		this->course.Y = -(this->course.Y);
+	}
+	if ((this->position.X == (CurrentPlatform.position.X - 1) 
 		) && this->position.Y == CurrentPlatform.position.Y
+		&& (this->course.X > 0)
 	) {
 		this->course.X = -(this->course.X);
 	}
+	if ((this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length) 
+		) && this->position.Y == CurrentPlatform.position.Y
+		&& (this->course.X < 0)
+	) {
+		this->course.X = -(this->course.X);
+	}
+	//столкновение с платформой по диагоналям
 	if(
-		(((this->position.X - 1) == (CurrentPlatform.position.X - 1)) ||
-		 ((this->position.X + 1) == (CurrentPlatform.position.X + CurrentPlatform.length))
-		) &&  (((this->position.Y - 1) == (CurrentPlatform.position.Y - 1)) ||
-		 ((this->position.Y + 1) == (CurrentPlatform.position.Y + 1))
-		)
+		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y - 1)) &&
+		(this->course.X > 0 && this->course.Y > 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(((this->position.X) == (CurrentPlatform.position.X + CurrentPlatform.length))) &&  
+		((this->position.Y) == (CurrentPlatform.position.Y - 1)) &&
+		(this->course.X < 0 && this->course.Y > 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		(this->course.X < 0 && this->course.Y < 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		(this->course.X > 0 && this->course.Y < 0)
 	) {
 		this->course.X = -(this->course.X);
 		this->course.Y = -(this->course.Y);
@@ -499,16 +535,17 @@ void Ball::collision() {
 	if (this->position.Y == 0) {
 		this->course.Y = -(this->course.Y);
 	}
-	if (this->position.X == (CurrentLevel.Size_Columns - 2)) {
+	if (this->position.X == (CurrentLevel.Size_Columns - 1)) {
 		this->course.X = -(this->course.X);
 	}
-	if (this->position.Y == (CurrentLevel.Size_Strings - 2)) {
+	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
 		// Проигрыш!!!!
+		CurrentGame.lifes--;
 		CurrentBall.setStandard(); //установка начального положения шара
 		CurrentPlatform.setStandard(); //установка начального положения платформы
-		CurrentGame.lifes--;
 		if (CurrentGame.lifes == 0) {
 			// обработка конца игры!
+			CurrentLevel.End(false);
 		}
 	}
 }
