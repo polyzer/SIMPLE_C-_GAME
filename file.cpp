@@ -407,7 +407,7 @@ void Ball::collision() {
 	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
 		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
 		 (this->position.Y == (CurrentPlatform.position.Y - 1)) &&
-		  (this->course.Y < 0)
+		  (this->course.Y > 0)
 		 )
 	{
 		this->course.Y = -(this->course.Y);
@@ -415,13 +415,13 @@ void Ball::collision() {
 	if ((this->position.X >= CurrentPlatform.position.X && 
 		 this->position.X <= (CurrentPlatform.position.X + CurrentPlatform.length)) &&
 		 (this->position.Y == (CurrentPlatform.position.Y + 1)) &&
-		  (this->course.Y > 0)
+		  (this->course.Y < 0)
 		 )
 	{
 		this->course.Y = -(this->course.Y);
 	}
 	if ((this->position.X == (CurrentPlatform.position.X - 1) 
-		) && this->position.Y == CurrentPlatform.position.Y
+		) && (this->position.Y == CurrentPlatform.position.Y)
 		&& (this->course.X > 0)
 	) {
 		this->course.X = -(this->course.X);
@@ -468,13 +468,13 @@ void Ball::collision() {
 	// КОНЕЦ обработки столкновений с платформой
 	//Столкновение с блоками
 	int i = 0; //счетчик столкновений
-	if ((CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) && (this->course.X < 0)) {
-		CurrentGame.increasePoints(CurrentLevel.map[this->position.Y + 1][this->position.X]); // очки за столкновение
+	if ((CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) && (this->course.Y < 0)) {
+		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
-	if ((CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) && (this->course.X > 0)) {
+	if ((CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) && (this->course.X < 0)) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X + 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
@@ -486,7 +486,7 @@ void Ball::collision() {
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
-	if ((CurrentLevel.map[this->position.Y][this->position.X - 1]) != CurrentLevel.back && (this->course.X < 0)) {
+	if ((CurrentLevel.map[this->position.Y][this->position.X - 1]) != CurrentLevel.back && (this->course.X > 0)) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X - 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
@@ -498,25 +498,25 @@ void Ball::collision() {
 			(this->course.X > 0) && (this->course.Y > 0) // если блок правее по горизонтали и ниже вертикали и шар идет вправо + вниз
 		) {
 			CurrentGame.points += 100;// очки за столкновение
-			CurrentLevel.map[this->position.Y + 1][this->position.X + 1] = CurrentLevel.back;
+			CurrentLevel.map[this->position.Y + 1][this->position.X + 1] = CurrentLevel.back;			
 			i++;
 		}
 		if (CurrentLevel.map[this->position.Y - 1][this->position.X + 1] != CurrentLevel.back && 
-			(this->course.X < 0) && (this->course.Y > 0) // если блок правее по горизонтали и выше вертикали и шар идет вправо + вверх
+			(this->course.X > 0) && (this->course.Y < 0) // если блок правее по горизонтали и выше вертикали и шар идет вправо + вверх
 		) {
 			CurrentGame.points += 100;// очки за столкновение
 			CurrentLevel.map[this->position.Y - 1][this->position.X + 1] = CurrentLevel.back;
 			i++;
 		}
 		if (CurrentLevel.map[this->position.Y - 1][this->position.X - 1] != CurrentLevel.back && 
-			(this->course.X < 0) && (this->course.Y > 0) // если блок левее по горизонтали и ниже вертикали и шар идет влево + вниз
+			(this->course.X < 0) && (this->course.Y < 0) // если блок левее по горизонтали и ниже вертикали и шар идет влево + вниз
 		) {
 			CurrentGame.points += 100;// очки за столкновение
 			CurrentLevel.map[this->position.Y - 1][this->position.X - 1] = CurrentLevel.back;
 			i++;
 		}
 		if (CurrentLevel.map[this->position.Y + 1][this->position.X - 1] != CurrentLevel.back && 
-			(this->course.X < 0) && (this->course.Y < 0) // если блок левее по горизонтали и выше вертикали и шар идет влево + вверх
+			(this->course.X < 0) && (this->course.Y > 0) // если блок левее по горизонтали и выше вертикали и шар идет влево + вверх
 		) {
 			CurrentGame.points += 100; // очки за столкновение
 			CurrentLevel.map[this->position.Y + 1][this->position.X - 1] = CurrentLevel.back;
@@ -529,16 +529,16 @@ void Ball::collision() {
 	}
 	//Конец обработки столкновений с блоками
 	// обработка выхода за экран!
-	if (this->position.X == 0) {
+	if ((this->position.X == 0) && (this->course.X < 0)) {
 		this->course.X = -(this->course.X);
 	}
-	if (this->position.Y == 0) {
+	if ((this->position.Y == 0) && (this->course.Y < 0)) {
 		this->course.Y = -(this->course.Y);
 	}
-	if (this->position.X == (CurrentLevel.Size_Columns - 1)) {
+	if ((this->position.X == (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
 		this->course.X = -(this->course.X);
 	}
-	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
+	if ((this->position.Y == (CurrentLevel.Size_Strings - 1)) && (this->course.Y > 0)) {
 		// Проигрыш!!!!
 		CurrentGame.lifes--;
 		CurrentBall.setStandard(); //установка начального положения шара
@@ -556,16 +556,16 @@ void Ball::collision() {
 ////////////
 bool Platform::outOfSize(int course){
 	// обработка выхода за экран
-	if(this->position.Y == 0 && course == 1) {
+	if((this->position.Y == 0) && (course == 1)) {
 		return false;
 	}
-	if((this->position.X + this->length - 1) >= Level::Size_Columns && course == 2) {
+	if(((this->position.X + this->length) >= (Level::Size_Columns)  - 1) && (course == 2)) {
 		return false;
 	}
-	if((this->position.Y + this->length - 1) >= Level::Size_Strings && course == 3) {
+	if((this->position.Y >= (Level::Size_Strings - 1)) && (course == 3)) {
 		return false;
 	}
-	if(this->position.X == 0 && course == 4) {
+	if((this->position.X == 0) && (course == 4)) {
 		return false;
 	}
 	return true;
@@ -608,10 +608,10 @@ bool Platform::blockCollision(int course){
 //////////////////!!!!!!!!!!!!!! ИСПРАВИТЬ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.
 
 bool Platform::ballCollision(int course) {
-		//Столкновение с блоками
-	if (course == 1) {//^
+		//Столкновение с мячом
+	if (course == 3) {//\/
 		for(int i = 0; i < this->length; i++) {
-			if (this->position.Y == (CurrentBall.position.Y - 1) && (this->position.X + i) == CurrentBall.position.X){
+			if (((this->position.Y + 1) == CurrentBall.position.Y) && ((this->position.X + i) == CurrentBall.position.X)){
 				return false;
 			}
 		}
@@ -621,15 +621,15 @@ bool Platform::ballCollision(int course) {
 			return false;
 		}
 	}
-	if (course == 3) {//\/
+	if (course == 1) {//^
 		for(int i = 0; i < this->length; i++) {
-			if (this->position.Y == (CurrentBall.position.Y + 1) && (this->position.X + i) == CurrentBall.position.X){
+			if (((this->position.Y - 1) == CurrentBall.position.Y) && ((this->position.X + i) == CurrentBall.position.X)){
 				return false;
 			}
 		}
 	}
 	if (course == 4) {//<-
-		if ((this->position.Y == CurrentBall.position.Y) && (this->position.X + this->length) == CurrentBall.position.X) {
+		if ((this->position.Y == CurrentBall.position.Y) && ((this->position.X - 1) == CurrentBall.position.X)) {
 			return false;
 		}
 	}
