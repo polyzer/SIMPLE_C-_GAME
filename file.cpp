@@ -103,12 +103,12 @@ struct Game {
 	}
 
 	void setStandard() { // устанавливает начальные значения
-		maxSpeed = 1;
-		minSpeed = 100;
+		minSpeed = 10;
+		maxSpeed = 100;
 		stopSymbol = 113; //символ оканчивающий игру
 		lifes = 3;
 		points = 0;
-		speed = 10;
+		speed = minSpeed;
 		saveStatus = 0; //0 - new, 1 - load
 	}
 
@@ -117,6 +117,7 @@ struct Game {
 	void setLifes(); //изменяет количество попыток
 	void render(); //рисует все
 	void destroyBlock(int y, int x); // обработка уничтожения блоков
+	void printInfo();
 	void Start(); // Начало игры
 	void End(); //Конец уровня!
 };
@@ -207,7 +208,7 @@ bool saveConfig() // сохранение концигурации при вых
 		{
 			for (int j = 0; j < CurrentLevel.Size_Columns; j++) 
 			{
-				fprintf(file_Fp, "%c ", CurrentLevel.map[i][j]);
+				fprintf(file_Fp, "%i ", CurrentLevel.map[i][j]);
 			}
 			fprintf(file_Fp, "\n");
 		}
@@ -241,13 +242,15 @@ bool readConfig() // чтение и загрузка конфигурации
 		if (CurrentGame.saveStatus == 1) {
 			for (int i = 0; i < Level::Size_Strings; i++) {
 				for (int j = 0; j < Level::Size_Columns; j++) {
-					fscanf(file_Fp, "%c", CurrentLevel.map[i][j]);
+					fscanf(file_Fp, "%i", &CurrentLevel.map[i][j]);
 				}
 			}	
-			printf("Загружена прошлая игра!");
+			printf("Загружена прошлая игра!\n");
+			system("pause");
+			system("cls");
 		} else if (CurrentGame.saveStatus == 0) {
 			CurrentLevel.loadLevel(CurrentLevel.number);
-			printf("Новая игра!");
+			//printf("Новая игра!");
 		}
 		fclose(file_Fp);
 		return true;
@@ -267,7 +270,7 @@ bool readConfig() // чтение и загрузка конфигурации
 				if (CurrentGame.saveStatus == 1) {
 					for (int i = 0; i < Level::Size_Strings; i++) {
 						for (int j = 0; j < Level::Size_Columns; j++) {
-							fscanf(file_Fp, "%c", CurrentLevel.map[i][j]);
+							fscanf(file_Fp, "%i", &CurrentLevel.map[i][j]);
 						}
 					}	
 				} else if (CurrentGame.saveStatus == 0) {
@@ -308,6 +311,8 @@ int main (int argc, char **argv[])
 	}
 	system("pause");	
 */	
+	//saveConfig();
+	readConfig();
 	int start = 1;
 	CurrentGame.Start();
 	return 0;
@@ -339,11 +344,11 @@ bool Level::loadLevel(int level) {
 			}
 			//free(this->name);
 			this->number = 1;
-			CurrentBall.position.X = 0;
+			CurrentBall.setStandard();
 			CurrentGame.setStandard();
 			CurrentPlatform.setStandard();
 
-			printf("Level was created");
+			//printf("Level was created");
 			return true;
 		break;
 		case 2:
@@ -381,23 +386,27 @@ void Level::End(bool status) {
 	if (status == true) {
 		printf("Уровень пройден: %i очков.\n", CurrentGame.points);
 		printf("Начать следующий уровень?\n");
-		scanf("%c", &c);
+		c = _getch();
 		if (c == 'y' || c == 'Y') {
 			CurrentLevel.number++;
 			CurrentLevel.loadLevel(CurrentLevel.number);
+			CurrentBall.setStandard();
+			CurrentPlatform.setStandard();
+			CurrentGame.setStandard();
 		} else {
 			saveConfig();
 			CurrentGame.End();
 		}
 	} else {
 		printf("Начать заново? (y/n)\n");
-		scanf("%c", &c);
+		c = _getch();
 		if (c == 'y' || c == 'Y') {
+			CurrentLevel.loadLevel(CurrentLevel.number);
 			CurrentPlatform.setStandard();
 			CurrentBall.setStandard();
-			CurrentPlatform.setStandard();
-
-
+			CurrentGame.setStandard();
+		} else {
+			CurrentGame.End();
 		}
 	}
 }
@@ -408,6 +417,27 @@ void Level::End(bool status) {
 //////////        BALL FUNCTIONS
 //////////
 void Ball::collision() {
+	// обработка выхода за экран!
+	if ((this->position.X <= 0) && (this->course.X < 0)) {
+		this->course.X = -(this->course.X);
+	}
+	if ((this->position.Y <= 0) && (this->course.Y < 0)) {
+		this->course.Y = -(this->course.Y);
+	}
+	if ((this->position.X >= (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
+		this->course.X = -(this->course.X);
+	}
+	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
+		// Проигрыш!!!!
+		CurrentGame.lifes--;
+		CurrentBall.setStandard(); //установка начального положения шара
+		CurrentPlatform.setStandard(); //установка начального положения платформы
+		if (CurrentGame.lifes == 0) {
+		//	 обработка конца игры!
+			CurrentLevel.End(false);
+		}
+	}
+	//Конец обработки выхода за экран
 	//Столкновение с платформой!
 	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
 		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
@@ -533,26 +563,7 @@ void Ball::collision() {
 		}
 	}
 	//Конец обработки столкновений с блоками
-	// обработка выхода за экран!
-	if ((this->position.X <= 0) && (this->course.X < 0)) {
-		this->course.X = -(this->course.X);
-	}
-	if ((this->position.Y <= 0) && (this->course.Y < 0)) {
-		this->course.Y = -(this->course.Y);
-	}
-	if ((this->position.X >= (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
-		this->course.X = -(this->course.X);
-	}
-	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
-		// Проигрыш!!!!
-		CurrentGame.lifes--;
-		CurrentBall.setStandard(); //установка начального положения шара
-		CurrentPlatform.setStandard(); //установка начального положения платформы
-		if (CurrentGame.lifes == 0) {
-		//	 обработка конца игры!
-			CurrentLevel.End(false);
-		}
-	}
+
 }
 
 ////////////
@@ -686,7 +697,6 @@ void Ball::step(){
 void Game::Start() {
 	int IR1 = 0;
 	int IR2 = 0;
-//		render();
 	while (true) {		
 		if (_kbhit()) {
 			IR1 = _getch();
@@ -721,8 +731,9 @@ void Game::Start() {
 					//continue;
 				}
 			}
-			if (IR1 == 27) {
-				break;
+			if (IR1 == CurrentGame.stopSymbol) {
+				CurrentLevel.End(false);
+				//break;
 			}
 		}
 	CurrentBall.collision();
@@ -742,8 +753,9 @@ void Game::destroyBlock(int y, int x) {
 	CurrentLevel.map[y][x] = CurrentLevel.back;
 }
 
-void Game::render() { //our painter
-	goToXY(0,0);// at first - come to 0,0
+void Game::render() { //рисователь
+	//system("cls");
+	goToXY(0,0);// Сначало идем в начало экрана
 	for (int i=0; i<Level::Size_Strings; i++)
 	{
 		for (int j=0; j<Level::Size_Columns; j++) 
@@ -765,20 +777,22 @@ void Game::render() { //our painter
 		}
 		printf("\n");
 	}
-
+	printInfo();
 }
 
 void Game::End() { // перенести функцию в Level.End
 	printf("Сохранить сессию?");
 	char c;
-	scanf("%c", &c);
+	c = _getch();
 	if (c == 'y' || c == 'Y') {
 		CurrentGame.saveStatus = 1;
 	} else {
 		CurrentGame.saveStatus = 0;
 	}
 	saveConfig();		
-
+	exit(0);
 }
 
-
+void Game::printInfo() {
+	printf("Очки: %i Жизни: %i\n", this->points, this->lifes);
+}
