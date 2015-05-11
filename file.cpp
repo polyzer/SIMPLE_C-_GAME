@@ -17,16 +17,26 @@ public:
 	int number; // номер уровня
 	char back; // background
 	char map [Size_Strings][Size_Columns]; // карта уровня
+	int minSpeedTime; //начальная скорость шара на уровне 
+	int maxSpeedTime; //максимальная скорость шара на уровне
+	int stepNorm; // количество шагов шара для изменения скорости
 	Level() {
-		this->number = 1; // устанавливаем первый уровень
-		this->loadLevel(this->number); // вначале грузим первый уровень
-		this->back = 32;
+		this->setStandard();
 	}
 	~Level() {
 		//free(this->name);
 	}
+	void setStandard() {
+		this->number = 1; // устанавливаем первый уровень
+		this->loadLevel(this->number); // вначале грузим первый уровень
+		this->back = 32;
+		this->minSpeedTime = 30;
+		this->maxSpeedTime = 7;
+		this->stepNorm = 4;
+	}
 	bool loadLevel(int level); //загружает уровень в зависимости от номера
 	void End(bool status); // отслеживает окончание уровня
+	bool allBlocksDestroyed(); // отслеживает уничтожение блоков 
 };
 
 struct Platform {
@@ -44,7 +54,6 @@ struct Platform {
 		this->length = 3; //
 		this->position.X = (Level::Size_Columns/2 - 1); // позиция о X
 		this->position.Y = (Level::Size_Strings - 2); // позиция по Y
-		
 	}
 
 	void setPosition(pos pos) {
@@ -66,17 +75,15 @@ struct Ball {
 	pos course; // направление мяча
 	char symbol; //цвет символа
 	int color; //цвет мяча
+	int speed; // текущая скорость
+	int timer; //количество обновлений
+	int stepNum; //счетчик шагов
+
 	Ball() {
 		this->setStandard();
 	}
 
-	void setStandard() {//установка начального положения мяча
-		this->course.X = 1; // 1 - вправо, -1 - влево
-		this->course.Y = -1;// 1 - вниз, -1 - вверх
-		this->position.X = (Level::Size_Columns/2);
-		this->position.Y = (Level::Size_Strings/2);
-		this->symbol = 4;	
-	}
+	void setStandard();
 
 	void setPosition(pos pos) {
 		this->position.X = pos.X;
@@ -88,8 +95,10 @@ struct Ball {
 	void step(); // шаг мяча
 	void setCourse(int side); //1 - вправо, 0 - влево
 	void collision(); //столкновения и выход за границы окна
-
+	void speedControl(); //контроль скорости
+	void speedUp(int spd);
 };
+
 struct Game {
 	int lifes; //жизни
 	long points; // очки игрока
@@ -97,15 +106,19 @@ struct Game {
 	int maxSpeed; // максимальная скорость игры
 	int minSpeed; // начальная скорость игры
 	char stopSymbol; // символ, по нажатию на который игра прерывается!
+	char pauseSymbol; // символ паузы!
 	int saveStatus; // статус сохранения: 0 - новая игра, 1 - загрузка
+	int FPS; //количество кадров
 	Game() {
 		this->setStandard();
 	}
 
 	void setStandard() { // устанавливает начальные значения
-		minSpeed = 10;
-		maxSpeed = 100;
+		this->FPS = 30;
+		minSpeed = 1000;
+		maxSpeed = 50;
 		stopSymbol = 113; //символ оканчивающий игру
+		pauseSymbol = 32;
 		lifes = 3;
 		points = 0;
 		speed = minSpeed;
@@ -113,7 +126,7 @@ struct Game {
 	}
 
 	void increasePoints(char c); // увеличивает очки в зависимости от элемента
-	void setSpeed(); // изменяет скорость
+	void speedUp(int spd); // изменяет скорость
 	void setLifes(); //изменяет количество попыток
 	void render(); //рисует все
 	void destroyBlock(int y, int x); // обработка уничтожения блоков
@@ -124,8 +137,8 @@ struct Game {
 
 Level CurrentLevel; // объект уровня
 Platform CurrentPlatform;// объект платформы
-Ball CurrentBall; //объект мяча
 Game CurrentGame; // объект текущей игры
+Ball CurrentBall; //объект мяча
 HANDLE hConsole; // обработчик
 
 char config_file_name_ca[] = "config.cnf"; //файл конфигурации
@@ -172,9 +185,11 @@ bool createConfig() //создание файла концигурации
 }
 
 void printGame() { // выводит на экран текущие показатели
-	printf("%i \n", CurrentGame.speed);
 	printf("%i \n", CurrentGame.lifes);
 	printf("%i \n", CurrentGame.points);
+	printf("%i \n", CurrentBall.speed);
+	printf("%i \n", CurrentBall.timer);
+	printf("%i \n", CurrentBall.stepNum);
 	printf("%i %i \n", CurrentBall.position.X, CurrentBall.position.Y);
 	printf("%i %i \n", CurrentBall.course.X, CurrentBall.course.Y);
 	printf("%i %i \n", CurrentPlatform.position.X, CurrentPlatform.position.Y);
@@ -196,9 +211,11 @@ bool saveConfig() // сохранение концигурации при вых
 	FILE *file_Fp;
 	if ((file_Fp = fopen(config_file_name_ca, "w")) != NULL)
 	{
-		fprintf(file_Fp, "%i \n", CurrentGame.speed);
 		fprintf(file_Fp, "%i \n", CurrentGame.lifes);
 		fprintf(file_Fp, "%i \n", CurrentGame.points);
+		fprintf(file_Fp, "%i \n", CurrentBall.speed);
+		fprintf(file_Fp, "%i \n", CurrentBall.timer);
+		fprintf(file_Fp, "%i \n", CurrentBall.stepNum);
 		fprintf(file_Fp, "%i %i \n", CurrentBall.position.X, CurrentBall.position.Y);
 		fprintf(file_Fp, "%i %i \n", CurrentBall.course.X, CurrentBall.course.Y);
 		fprintf(file_Fp, "%i %i \n", CurrentPlatform.position.X, CurrentPlatform.position.Y);
@@ -231,9 +248,11 @@ bool readConfig() // чтение и загрузка конфигурации
 	if ((file_Fp = fopen(config_file_name_ca, "r")) != NULL)
 	{
 		//Считывание!!!
-		fscanf(file_Fp, "%i", &CurrentGame.speed);
 		fscanf(file_Fp, "%i", &CurrentGame.lifes);
 		fscanf(file_Fp, "%i", &CurrentGame.points);
+		fscanf(file_Fp, "%i", &CurrentBall.speed);
+		fscanf(file_Fp, "%i", &CurrentBall.timer);
+		fscanf(file_Fp, "%i", &CurrentBall.stepNum);
 		fscanf(file_Fp, "%i %i", &CurrentBall.position.X, &CurrentBall.position.Y);
 		fscanf(file_Fp, "%i %i", &CurrentBall.course.X, &CurrentBall.course.Y);
 		fscanf(file_Fp, "%i %i", &CurrentPlatform.position.X, &CurrentPlatform.position.Y);
@@ -259,9 +278,11 @@ bool readConfig() // чтение и загрузка конфигурации
 			if ((file_Fp = fopen(config_file_name_ca, "r")) != NULL) 
 			{
 				// считывание!!!
-				fscanf(file_Fp, "%i", &CurrentGame.speed);
 				fscanf(file_Fp, "%i", &CurrentGame.lifes);
-				fscanf(file_Fp, "%i", &CurrentGame.points);
+				fscanf(file_Fp, "%i", &CurrentGame.points);	
+				fscanf(file_Fp, "%i", &CurrentBall.speed);
+				fscanf(file_Fp, "%i", &CurrentBall.timer);
+				fscanf(file_Fp, "%i", &CurrentBall.stepNum);
 				fscanf(file_Fp, "%i %i", &CurrentBall.position.X, &CurrentBall.position.Y);
 				fscanf(file_Fp, "%i %i", &CurrentBall.course.X, &CurrentBall.course.Y);
 				fscanf(file_Fp, "%i %i", &CurrentPlatform.position.X, &CurrentPlatform.position.Y);
@@ -299,21 +320,9 @@ bool readConfig() // чтение и загрузка конфигурации
 int main (int argc, char **argv[]) 
 {
 	setlocale(LC_ALL, "Russian");
-	//GetCurrentDirectoryA(FILE_PATH_BUF_DW, FILE_PATH_ca);
-	//printf(FILE_PATH_ca);
-/*	
-	saveConfig();
-	if (readConfig()) {
-		printGame();
-		system("pause");
-		system("cls");
-		saveConfig();
-	}
-	system("pause");	
-*/	
+
 	//saveConfig();
 	readConfig();
-	int start = 1;
 	CurrentGame.Start();
 	return 0;
 }
@@ -372,8 +381,31 @@ bool Level::loadLevel(int level) {
 			CurrentBall.position.X = 0;
 			CurrentGame.setStandard();
 			CurrentPlatform.setStandard();
-
 			printf("Level was created");
+			return true;
+		break;
+		default:
+			for (int i = 0; i < this->Size_Strings; i++) {
+				for (int j = 0; j < this->Size_Columns; j++) {
+					if (i == 0) {
+						this->map[i][j] = 110;
+					} else
+					if (i == 1) {
+						this->map[i][j] = 103;
+					} else
+					if (i == 2) {
+						this->map[i][j] = 102;
+					} else {
+						this->map[i][j] = 32;
+					}
+				}
+			}
+			//free(this->name);
+			this->number = 1;
+			CurrentBall.setStandard();
+			CurrentGame.setStandard();
+			CurrentPlatform.setStandard();
+			//printf("Level was created");
 			return true;
 		break;
 		}
@@ -393,6 +425,8 @@ void Level::End(bool status) {
 			CurrentBall.setStandard();
 			CurrentPlatform.setStandard();
 			CurrentGame.setStandard();
+			CurrentGame.saveStatus = 1;
+			saveConfig();
 		} else {
 			saveConfig();
 			CurrentGame.End();
@@ -689,6 +723,17 @@ void Ball::step(){
 	}
 
 }
+
+void Ball::setStandard() {//установка начального положения мяча
+		this->course.X = 1; // 1 - вправо, -1 - влево
+		this->course.Y = -1;// 1 - вниз, -1 - вверх
+		this->position.X = (Level::Size_Columns/2);
+		this->position.Y = (Level::Size_Strings/2);
+		this->symbol = 4;
+		this->speed = CurrentLevel.minSpeedTime;
+		this->timer = 0;
+		this->stepNum = 0;
+	}
 ////////////
 /////////// GAME FUNCTIONS
 ////////////
@@ -733,14 +778,30 @@ void Game::Start() {
 			}
 			if (IR1 == CurrentGame.stopSymbol) {
 				CurrentLevel.End(false);
-				//break;
+			}
+			if (IR1 == CurrentGame.pauseSymbol) {
+				system("pause");
+				system("cls");
 			}
 		}
-	CurrentBall.collision();
-	CurrentBall.step();
+	CurrentBall.timer++; // счетчик проходов для замедления скорости шара
+	if (CurrentBall.timer >= CurrentBall.speed) {
+		CurrentBall.collision();
+		CurrentBall.step(); // если достаточно раз прошел - шаг шара
+		CurrentBall.timer = 0;
+		CurrentBall.stepNum++;
+	}
+	if (CurrentBall.stepNum >= CurrentLevel.stepNorm) { //если прошли опред кол-во шагов, то ускоряемся
+		CurrentBall.speedUp(2);
+		CurrentBall.stepNum = 0;
+	}
 	this->render();
-	Sleep(1000);
-	CurrentBall.collision();
+	if (CurrentLevel.allBlocksDestroyed()){
+		CurrentLevel.End(true);
+	}
+	Sleep(CurrentGame.FPS);
+
+//	CurrentBall.collision();
 	}//end while
 }
 
@@ -756,6 +817,7 @@ void Game::destroyBlock(int y, int x) {
 void Game::render() { //рисователь
 	//system("cls");
 	goToXY(0,0);// Сначало идем в начало экрана
+	printf("LEVEL %i \n", CurrentLevel.number);
 	for (int i=0; i<Level::Size_Strings; i++)
 	{
 		for (int j=0; j<Level::Size_Columns; j++) 
@@ -795,4 +857,19 @@ void Game::End() { // перенести функцию в Level.End
 
 void Game::printInfo() {
 	printf("Очки: %i Жизни: %i\n", this->points, this->lifes);
+}
+
+void Ball::speedUp(int spd) {
+	if (this->speed >= CurrentLevel.maxSpeedTime)
+		this->speed -= spd;
+}
+bool Level::allBlocksDestroyed() {
+	for(int i = 0; i < Level::Size_Strings; i++) {
+		for(int j = 0; j < Level::Size_Columns; j++){
+			if (this->map[i][j] != this->back) {
+				return false;
+			}
+		}
+	}
+	return true;
 }
