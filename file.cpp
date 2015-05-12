@@ -340,13 +340,13 @@ bool Level::loadLevel(int level) {
 				for (int j = 0; j < this->Size_Columns; j++) {
 					if (i == 0) {
 						this->map[i][j] = 110;
-					} else
+					} else/*
 					if (i == 1) {
 						this->map[i][j] = 103;
 					} else
 					if (i == 2) {
 						this->map[i][j] = 102;
-					} else {
+					} else */{
 						this->map[i][j] = 32;
 					}
 				}
@@ -543,7 +543,7 @@ void Ball::collision() {
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
-	if ((CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) && (this->course.X < 0)) {
+	if ((CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) && (this->course.X > 0)) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X + 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
@@ -555,7 +555,7 @@ void Ball::collision() {
 		this->course.Y = -(this->course.Y);
 		i++;
 	}
-	if ((CurrentLevel.map[this->position.Y][this->position.X - 1]) != CurrentLevel.back && (this->course.X > 0)) {
+	if ((CurrentLevel.map[this->position.Y][this->position.X - 1]) != CurrentLevel.back && (this->course.X < 0)) {
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X - 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
@@ -609,7 +609,7 @@ bool Platform::outOfSize(int course){
 	if((this->position.Y == 0) && (course == 1)) {
 		return false;
 	}
-	if(((this->position.X + this->length) >= (Level::Size_Columns)  - 1) && (course == 2)) {
+	if(((this->position.X + this->length) >= Level::Size_Columns) && (course == 2)) {
 		return false;
 	}
 	if((this->position.Y >= (Level::Size_Strings - 1)) && (course == 3)) {
