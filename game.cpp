@@ -95,9 +95,10 @@ struct Ball {
 	void step(); // шаг мяча
 	void setCourse(int side); //1 - вправо, 0 - влево
 	bool collision(); //столкновения и выход за границы окна
+	bool screenOut();
+	bool platformCollision();
 	void speedControl(); //контроль скорости
 	void speedUp(int spd);
-	bool double_collision(int num);
 };
 
 struct Game {
@@ -116,12 +117,12 @@ struct Game {
 
 	void setStandard() { // устанавливает начальные значения
 		this->FPS = 30;
-		points = 0;
 		minSpeed = 1000;
 		maxSpeed = 50;
 		stopSymbol = 113; //символ оканчивающий игру
 		pauseSymbol = 32;
 		lifes = 3;
+		points = 0;
 		speed = minSpeed;
 		saveStatus = 0; //0 - new, 1 - load
 	}
@@ -334,6 +335,7 @@ int main (int argc, char **argv[])
 //////			LEVEL FUNCTIONS
 //////////
 ///////////
+
 bool Level::loadLevel(int level) {
 		switch(level) {
 		case 1:
@@ -352,11 +354,13 @@ bool Level::loadLevel(int level) {
 					}
 				}
 			}
+			//free(this->name);
 			this->number = 1;
 			CurrentBall.setStandard();
 			CurrentGame.setStandard();
 			CurrentPlatform.setStandard();
-			system("cls");
+
+			//printf("Level was created");
 			return true;
 		break;
 		case 2:
@@ -375,11 +379,12 @@ bool Level::loadLevel(int level) {
 					}
 				}
 			}
+			//free(this->name);
 			this->number = 2;
 			CurrentBall.position.X = 0;
 			CurrentGame.setStandard();
 			CurrentPlatform.setStandard();
-			system("cls");
+			printf("Level was created");
 			return true;
 		break;
 		default:
@@ -398,11 +403,12 @@ bool Level::loadLevel(int level) {
 					}
 				}
 			}
+			//free(this->name);
 			this->number = 1;
 			CurrentBall.setStandard();
 			CurrentGame.setStandard();
 			CurrentPlatform.setStandard();
-			system("cls");
+			//printf("Level was created");
 			return true;
 		break;
 		}
@@ -448,142 +454,59 @@ void Level::End(bool status) {
 //////////        BALL FUNCTIONS
 //////////
 
-//
-//если с противоположных сторон у нас блоки
-//секторы:
-//123
-//4 6
-//789
-//функция принимает номер сектора, в котором нужно проверить наличие другого блока
-//тру если есть есть противоположный блок
-bool Ball::double_collision(int num) {
-	switch(num) {
-	case 1:
-		if (CurrentLevel.map[this->position.Y - 1][this->position.X - 1] != CurrentLevel.back){
-			return true;
-		}
-	case 2:
-		if (CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back){
-			return true;
-		}
-	case 3:
-		if (CurrentLevel.map[this->position.Y - 1][this->position.X + 1] != CurrentLevel.back){
-			return true;
-		}
-	case 4:
-		if (CurrentLevel.map[this->position.Y][this->position.X - 1] != CurrentLevel.back){
-			return true;
-		}
-	case 6:
-		if (CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back){
-			return true;
-		}
-	case 7:
-		if (CurrentLevel.map[this->position.Y + 1][this->position.X - 1] != CurrentLevel.back){
-			return true;
-		}
-	case 8:
-		if (CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back){
-			return true;
-		}
-	case 9:
-		if (CurrentLevel.map[this->position.Y + 1][this->position.X + 1] != CurrentLevel.back){
-			return true;
-		}
+bool Ball::screenOut(){
+/*	if ((this->position.X <= 0) && (this->course.X < 0)) {
+		return true;
+	}*/
+	if ((this->position.Y <= 0)) {
+		return true;
 	}
+//	if (this->position.X >= (CurrentLevel.Size_Columns - 1)) {
+//		return true;
+//	}
+	return false;
 }
 
-bool Ball::collision() {
+bool Ball::platformCollision() {
 	//Столкновение с платформой!
-	int k = 0; //счетчик столкновений с платформой
 	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
 		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
-		 (this->position.Y == (CurrentPlatform.position.Y - 1)) &&
-		  (this->course.Y > 0)
-		 )
+		 (this->position.Y == (CurrentPlatform.position.Y - 1))
+	 )
 	{
-		this->course.Y = -(this->course.Y);
-		k++;
-	}
-	if ((this->position.X >= CurrentPlatform.position.X && 
-		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
-		 (this->position.Y == (CurrentPlatform.position.Y + 1)) &&
-		  (this->course.Y < 0)
-		 )
-	{
-		this->course.Y = -(this->course.Y);
-		k++;
-	}
-	if ((this->position.X == (CurrentPlatform.position.X - 1) 
-		) && (this->position.Y == CurrentPlatform.position.Y)
-		&& (this->course.X > 0)
-	) {
-		this->course.X = -(this->course.X);
-	}
-	if ((this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length) 
-		) && this->position.Y == CurrentPlatform.position.Y
-		&& (this->course.X < 0)
-	) {
-		this->course.X = -(this->course.X);
-		k++;
+		return true;
 	}
 	//столкновение с платформой по диагоналям
 	if(
 		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
-		(this->position.Y == (CurrentPlatform.position.Y - 1)) &&
-		(this->course.X > 0 && this->course.Y > 0)
+		(this->position.Y == (CurrentPlatform.position.Y - 1))
 	) {
-		this->course.X = -(this->course.X);
-		this->course.Y = -(this->course.Y);
-		k++;
+		return true;
 	}
 	if(
 		(((this->position.X) == (CurrentPlatform.position.X + CurrentPlatform.length))) &&  
-		((this->position.Y) == (CurrentPlatform.position.Y - 1)) &&
-		(this->course.X < 0 && this->course.Y > 0)
+		((this->position.Y) == (CurrentPlatform.position.Y - 1))
 	) {
-		this->course.X = -(this->course.X);
-		this->course.Y = -(this->course.Y);
-		k++;
+		return true;
 	}
-	if(
-		(this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length)) &&  
-		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
-		(this->course.X < 0 && this->course.Y < 0)
-	) {
-		this->course.X = -(this->course.X);
-		this->course.Y = -(this->course.Y);
-		k++;
-	}
-	if(
-		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
-		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
-		(this->course.X > 0 && this->course.Y < 0)
-	) {
-		this->course.X = -(this->course.X);
-		this->course.Y = -(this->course.Y);
-		k++;
-	}
+	return false;
+	// КОНЕЦ обработки столкновений с платформой
 
-	int j = 0; // факт выхода за границу экрана
+}
+
+bool Ball::collision() {
+	if (this->platformCollision() && this->screenOut()) {
+		return false;
+	}
 	// обработка выхода за экран!
 	if ((this->position.X <= 0) && (this->course.X < 0)) {
 		this->course.X = -(this->course.X);
-		if (j && k) {
-			return false;
-	}
 	}
 	if ((this->position.Y <= 0) && (this->course.Y < 0)) {
 		this->course.Y = -(this->course.Y);
-		if (j && k) {
-			return false;
-		}
 	}
 	if ((this->position.X >= (CurrentLevel.Size_Columns - 1)) && (this->course.X > 0)) {
 		this->course.X = -(this->course.X);
-		if (j && k) {
-			return false;
-		}
 	}
 	if (this->position.Y == (CurrentLevel.Size_Strings - 1)) {
 		// Проигрыш!!!!
@@ -596,99 +519,133 @@ bool Ball::collision() {
 		}
 	}
 	//Конец обработки выхода за экран
+	//Столкновение с платформой!
+	if ((this->position.X >= CurrentPlatform.position.X && //Если шарик находится над платформой и идет в низ
+		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 (this->position.Y == (CurrentPlatform.position.Y - 1)) &&
+		  (this->course.Y > 0)
+		 )
+	{
+		this->course.Y = -(this->course.Y);
+	}
+	if ((this->position.X >= CurrentPlatform.position.X && 
+		 this->position.X < (CurrentPlatform.position.X + CurrentPlatform.length)) &&
+		 (this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		  (this->course.Y < 0)
+		 )
+	{
+		this->course.Y = -(this->course.Y);
+	}
+	if ((this->position.X == (CurrentPlatform.position.X - 1) 
+		) && (this->position.Y == CurrentPlatform.position.Y)
+		&& (this->course.X > 0)
+	) {
+		this->course.X = -(this->course.X);
+	}
+	if ((this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length) 
+		) && this->position.Y == CurrentPlatform.position.Y
+		&& (this->course.X < 0)
+	) {
+		this->course.X = -(this->course.X);
+	}
+	//столкновение с платформой по диагоналям
+	if(
+		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y - 1)) &&
+		(this->course.X > 0 && this->course.Y > 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(((this->position.X) == (CurrentPlatform.position.X + CurrentPlatform.length))) &&  
+		((this->position.Y) == (CurrentPlatform.position.Y - 1)) &&
+		(this->course.X < 0 && this->course.Y > 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(this->position.X == (CurrentPlatform.position.X + CurrentPlatform.length)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		(this->course.X < 0 && this->course.Y < 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	if(
+		(this->position.X == (CurrentPlatform.position.X - 1)) &&  
+		(this->position.Y == (CurrentPlatform.position.Y + 1)) &&
+		(this->course.X > 0 && this->course.Y < 0)
+	) {
+		this->course.X = -(this->course.X);
+		this->course.Y = -(this->course.Y);
+	}
+	// КОНЕЦ обработки столкновений с платформой
 	//Столкновение с блоками
 	int i = 0; //счетчик столкновений
 	if ((CurrentLevel.map[this->position.Y - 1][this->position.X] != CurrentLevel.back) && (this->course.Y < 0)) {
-		i++;
-		if (i && k) {
-			return false;
-		}
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y - 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
+		i++;
 	}
 	if ((CurrentLevel.map[this->position.Y][this->position.X + 1] != CurrentLevel.back) && (this->course.X > 0)) {
-		i++;
-		if (i && k) {
-			return false;
-		}
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X + 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
+		i++;
 	}
 	if ((CurrentLevel.map[this->position.Y + 1][this->position.X] != CurrentLevel.back) && (this->course.Y > 0)) {
-		i++;
-		if (i && k) {
-			return false;
-		}
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y + 1][this->position.X] = CurrentLevel.back;
 		this->course.Y = -(this->course.Y);
-
+		i++;
 	}
 	if ((CurrentLevel.map[this->position.Y][this->position.X - 1]) != CurrentLevel.back && (this->course.X < 0)) {
-		i++;
-		if (i && k) {
-			return false;
-		}
 		CurrentGame.points += 100; // очки за столкновение
 		CurrentLevel.map[this->position.Y][this->position.X - 1] = CurrentLevel.back;
 		this->course.X = -(this->course.X);
-
+		i++;
 	}	
 	//Столкновения по диагонали
 	if (i == 0) { //Если не случилось столкновений по горизонтали/вертикали, то обрабатываем диагональные
 		if (CurrentLevel.map[this->position.Y + 1][this->position.X + 1] != CurrentLevel.back && 
 			(this->course.X > 0) && (this->course.Y > 0) // если блок правее по горизонтали и ниже вертикали и шар идет вправо + вниз
 		) {
-			i++;
-			if (i && k) {
-				return false;
-			}
 			CurrentGame.points += 100;// очки за столкновение
 			CurrentLevel.map[this->position.Y + 1][this->position.X + 1] = CurrentLevel.back;			
-			this->course.Y = -(this->course.Y);
-			this->course.X = -(this->course.X);	
+			i++;
 		}
 		if (CurrentLevel.map[this->position.Y - 1][this->position.X + 1] != CurrentLevel.back && 
 			(this->course.X > 0) && (this->course.Y < 0) // если блок правее по горизонтали и выше вертикали и шар идет вправо + вверх
 		) {
-			i++;
-			if (i && k) {
-				return false;
-			}
 			CurrentGame.points += 100;// очки за столкновение
 			CurrentLevel.map[this->position.Y - 1][this->position.X + 1] = CurrentLevel.back;
-			this->course.Y = -(this->course.Y);
-			this->course.X = -(this->course.X);	
+			i++;
 		}
 		if (CurrentLevel.map[this->position.Y - 1][this->position.X - 1] != CurrentLevel.back && 
 			(this->course.X < 0) && (this->course.Y < 0) // если блок левее по горизонтали и ниже вертикали и шар идет влево + вниз
 		) {
-			i++;
-			if (i && k) {
-				return false;
-			}
 			CurrentGame.points += 100;// очки за столкновение
 			CurrentLevel.map[this->position.Y - 1][this->position.X - 1] = CurrentLevel.back;
-			this->course.Y = -(this->course.Y);
-			this->course.X = -(this->course.X);	
+			i++;
 		}
 		if (CurrentLevel.map[this->position.Y + 1][this->position.X - 1] != CurrentLevel.back && 
 			(this->course.X < 0) && (this->course.Y > 0) // если блок левее по горизонтали и выше вертикали и шар идет влево + вверх
 		) {
-			i++;
-			if (i && k) {
-				return false;
-			}			
 			CurrentGame.points += 100; // очки за столкновение
 			CurrentLevel.map[this->position.Y + 1][this->position.X - 1] = CurrentLevel.back;
+			i++;
+		}
+		if (i != 0) {
 			this->course.Y = -(this->course.Y);
 			this->course.X = -(this->course.X);	
 		}
 	}
-	//Конец обработки столкновений с блоками
 	return true;
+	//Конец обработки столкновений с блоками
+
 }
 
 ////////////
@@ -877,8 +834,12 @@ void Game::Start() {
 		}
 	CurrentBall.timer++; // счетчик проходов для замедления скорости шара
 	if (CurrentBall.timer >= CurrentBall.speed) {
-		if(CurrentBall.collision())//ЕСЛИ МОЖНО ИДТИ
-			CurrentBall.step(); 
+		CurrentBall.collision();
+		CurrentBall.collision();
+		CurrentBall.collision();
+		if(CurrentBall.collision()){
+		CurrentBall.step(); // если достаточно раз прошел - шаг шара
+		}
 		CurrentBall.timer = 0;
 		CurrentBall.stepNum++;
 	}
