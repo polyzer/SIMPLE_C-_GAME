@@ -867,8 +867,9 @@ void Game::render() { //рисователь
 	goToXY(0,0);// Сначало идем в начало экрана
 	for (int i=0; i<Level::Size_Columns; i++)
 	{
-		printf("*\n");
+		printf("*");
 	}
+	printf("\n");
 	printf("LEVEL %i \n", CurrentLevel.number);
 	for (int i=0; i<Level::Size_Strings; i++)
 	{
